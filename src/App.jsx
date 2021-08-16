@@ -5,6 +5,7 @@ function App() {
   const [tareas, setTareas] = useState([]);
   const [tarea, setTarea] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [id, setId] = useState("");
 
   useEffect(() => {
     const obtenerDatos = async () => {
@@ -29,7 +30,7 @@ function App() {
 
     if (!tarea.trim()) {
       console.log("Esta vacío");
-      return
+      return;
     }
 
     try {
@@ -59,11 +60,41 @@ function App() {
     }
   };
 
+  const activarEdicion = (item) => {
+    setModoEdicion(true);
+    setTarea(item.name);
+    setId(item.id);
+  };
+
+  const editar = async (e) => {
+    e.preventDefault();
+    if (!tarea.trim()) {
+      console.log("log editar: campo vacio");
+      return;
+    }
+
+    try {
+      const db = firebase.firestore();
+      await db.collection("tareas").doc(id).update({
+        name: tarea,
+      });
+      const arrayEditado = tareas.map((item) =>
+        item.id === id ? { id: item.id, fecha: item.fecha, name: tarea } : item
+      );
+      setTareas(arrayEditado);
+      setModoEdicion(false);
+      setTarea("");
+      setId("");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="container mt-3">
       <div className="row">
-        <h3>{modoEdicion ? "Editar" : "Nueva tarea"}</h3>
-        <form onSubmit={agregar}>
+        <h3>{modoEdicion ? "Editar" : "Agregar una nueva tarea"}</h3>
+        <form onSubmit={modoEdicion ? editar : agregar}>
           <input
             type="text"
             placeholder="Ingrese una tarea"
@@ -73,10 +104,10 @@ function App() {
           />
 
           <div className="d-grid gap-2">
-            <button className={ modoEdicion ? "btn btn-primary" : "btn btn-success"}>
-              {
-              modoEdicion ? 'Editar': "Agregar"
-            } 
+            <button
+              className={modoEdicion ? "btn btn-primary" : "btn btn-success"}
+            >
+              {modoEdicion ? "Editar" : "Agregar"}
             </button>
           </div>
         </form>
@@ -94,7 +125,10 @@ function App() {
                 >
                   Eliminar
                 </button>
-                <button className="btn btn-warning btn-sm  float-end">
+                <button
+                  className="btn btn-warning btn-sm  float-end"
+                  onClick={() => activarEdicion(item)}
+                >
                   Editar
                 </button>
               </li>
